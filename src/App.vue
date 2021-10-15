@@ -16,7 +16,7 @@
 
       <!-- Button busca -->
       <div class="d-inline p-2 col py-3 px-md-5 border">
-        <input class="col-md-6" type="text" id="buscar" v-model="busca" />
+        <input class="col-12" type="text" id="buscar" v-model="busca" />
       </div>
     </div>
 
@@ -40,6 +40,7 @@
               class="close"
               data-dismiss="modal"
               aria-label="Fechar"
+              @click="limpar"
             >
               <span aria-hidden="true">&times;</span>
             </button>
@@ -47,6 +48,10 @@
           <div class="modal-body">
             <form>
               <div class="form-row">
+                <div class="form-group col-12" v-if="edit">
+                  <label>ID: </label>
+                  <strong>{{ id+1 }}</strong>
+                </div>
                 <div class="form-group col-md-6">
                   <label for="inputNome">Nome</label>
                   <input
@@ -155,55 +160,18 @@
     </div>
 
     <!-- Data Table -->
-    <table id="tabela" class="table table-hover">
-      <thead class="thead-light table-bordered">
-        <tr>
-          <th scope="col">#</th>
-          <th scope="col">Nome Completo</th>
-          <th scope="col">E-Mail</th>
-          <th scope="col">Telefone</th>
-          <th scope="col">CPF / CNPJ</th>
-          <th scope="col">Ações</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="pessoa in tableInfosFiltro" :key="pessoa.id">
-          <th scope="row">{{ pessoa.id + 1 }}</th>
-          <td>{{ pessoa.nomeCompleto }}</td>
-          <td>{{ pessoa.email }}</td>
-          <td>{{ pessoa.telefone }}</td>
-          <td>{{ pessoa.numDoc }}</td>
-          <td>
-            <button
-              type="button"
-              @click="onEdit(pessoa)"
-              style="margin: 10px;"
-              class="btn btn-success"
-              data-toggle="modal"
-              data-target="#exampleModal"
-            >
-              Editar
-            </button>
-            <button
-              type="button"
-              @click="onRemover(pessoa)"
-              class="btn btn-danger"
-              data-toggle="modal"
-              data-target="#remover"
-            >
-              Excluir
-            </button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <table-pessoa :dados="tableInfosFiltro"
+      @editaPessoa="onEdit"
+      @removePessoa="onRemover"/>
   </div>
 </template>
 
 <script>
+
+import TablePessoa from './components/TablePessoa.vue';
 export default {
   name: "App",
-  components: {},
+  components: {TablePessoa},
   data() {
     return {
       id: 0,
@@ -236,16 +204,20 @@ export default {
       return id;
     },
     tableInfosFiltro() {
-      if (this.busca == "") return this.dados;
+      if (this.busca == "") return this.montDados;
       if (this.busca) {
         const result = this.dados.filter((c) =>
-          c.nome.toLocaleUpperCase().includes(this.busca.toLocaleUpperCase(0))
+          c.nome.toUpperCase().includes(this.busca.toUpperCase()) ||
+          c.sobrenome.toUpperCase().includes(this.busca.toUpperCase())
         );
         return result;
       } else {
-        return this.dados;
+        return this.montDados;
       }
     },
+    montDados() {
+      return this.dados
+    }
   },
   methods: {
     onNew() {
@@ -255,7 +227,6 @@ export default {
     },
     onEdit(pessoa) {
       this.edit = true;
-      console.log("Editar", this.edit);
       document.getElementById("btn-salvar").innerHTML = "Atualizar";
       document.getElementById("titulo-dialog").innerText = "Editar Pessoa";
       this.id = pessoa.id;
@@ -264,6 +235,7 @@ export default {
       this.nomeCompleto = pessoa.nomeCompleto;
       this.email = pessoa.email;
       this.telefone = pessoa.telefone;
+      this.pessoaJuridca = pessoa.pessoaJuridca;
       this.numDoc = pessoa.numDoc;
       this.pessoa = pessoa;
     },
@@ -272,9 +244,6 @@ export default {
       let index = this.dados.indexOf(pessoa);
       this.dados.splice(index, 1);
       this.limpar();
-    },
-    onBusca() {
-      alert("Buscar: " + this.busca);
     },
     onSalvar() {
       if (this.edit) {
@@ -302,7 +271,6 @@ export default {
             pessoaJuridca: this.pessoaJuridca,
             numDoc: this.numDoc,
           });
-          console.log(this.dados);
         } else {
           this.dados.push({
             id: this.idPessoas,
